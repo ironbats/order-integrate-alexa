@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Predicate;
 
 @Service
@@ -15,11 +16,13 @@ public class DecisionMaker {
 
     public Broker decision(List<OrderDTO> orderDTO) {
 
-        boolean highThroughput = true;
-        boolean highDurability = true;
-        boolean simpleConfiguration = false;
-        boolean streamProcessing = true;
-        boolean multiProtocolSupport = false;
+        Random random = new Random();
+
+        boolean highThroughput = random.nextBoolean();
+        boolean highDurability = random.nextBoolean();
+        boolean simpleConfiguration = random.nextBoolean();
+        boolean streamProcessing = random.nextBoolean();
+        boolean multiProtocolSupport = random.nextBoolean();
         int numberOfOrders = orderDTO.size();
 
         return decisionBroker(highThroughput, highDurability, simpleConfiguration, streamProcessing, multiProtocolSupport, numberOfOrders);
@@ -38,7 +41,7 @@ public class DecisionMaker {
                 new Criterion(v -> simpleConfiguration, 1, 2),
                 new Criterion(v -> streamProcessing, 2, 1),
                 new Criterion(v -> multiProtocolSupport, 1, 2),
-                new Criterion(v -> numberOfOrders > 10000, 2, 10)
+                new Criterion(v -> numberOfOrders < 10000, 3, 7)
         );
 
         int kafkaScore = criteria.stream()
