@@ -28,6 +28,7 @@ public class OrderService {
     @Autowired
     private KafkaTemplate<String, OrderDTO> kafkaTemplate;
 
+
     public AlexaResponse createOrder() {
 
         Random random = new Random();

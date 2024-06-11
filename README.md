@@ -1,5 +1,5 @@
 #  Kafka x RabbitMQ, By ALEXA =)
 
-### Reference Documentation
+## Arquitetura de Software
 
-
+![alexa-architecture.jpg](alexa-architecture.jpg)

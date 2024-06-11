@@ -1,9 +1,13 @@
 package br.com.decision;
 
 import br.com.dto.OrderDTO;
+import lombok.Data;
+import lombok.Getter;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 
 @Service
 public class DecisionMaker {
@@ -18,7 +22,7 @@ public class DecisionMaker {
         boolean multiProtocolSupport = false;
         int numberOfOrders = orderDTO.size();
 
-        return decisionBroker(highThroughput, highDurability, simpleConfiguration, streamProcessing, multiProtocolSupport,numberOfOrders);
+        return decisionBroker(highThroughput, highDurability, simpleConfiguration, streamProcessing, multiProtocolSupport, numberOfOrders);
     }
 
     private Broker decisionBroker(boolean highThroughput,
@@ -28,53 +32,32 @@ public class DecisionMaker {
                                   boolean multiProtocolSupport,
                                   int numberOfOrders) {
 
-        int kafkaScore = 0;
-        int rabbitMqScore = 0;
+        List<Criterion> criteria = Arrays.asList(
+                new Criterion(v -> highThroughput, 2, 1),
+                new Criterion(v -> highDurability, 2, 1),
+                new Criterion(v -> simpleConfiguration, 1, 2),
+                new Criterion(v -> streamProcessing, 2, 1),
+                new Criterion(v -> multiProtocolSupport, 1, 2),
+                new Criterion(v -> numberOfOrders > 10000, 2, 10)
+        );
 
-        // High Throughput
-        if (highThroughput) {
-            kafkaScore += 2;
-        } else {
-            rabbitMqScore += 1;
-        }
+        int kafkaScore = criteria.stream()
+                .mapToInt(c -> c.test() ? c.getKafkaScore() : 0)
+                .sum();
 
-        // High Durability
-        if (highDurability) {
-            kafkaScore += 2;
-        } else {
-            rabbitMqScore += 1;
-        }
-
-        // Simple Configuration
-        if (simpleConfiguration) {
-            rabbitMqScore += 2;
-        } else {
-            kafkaScore += 1;
-        }
-
-        // Stream Processing
-        if (streamProcessing) {
-            kafkaScore += 2;
-        } else {
-            rabbitMqScore += 1;
-        }
-
-        // Multi-Protocol Support
-        if (multiProtocolSupport) {
-            rabbitMqScore += 2;
-        } else {
-            kafkaScore += 1;
-        }
-
-        // Number of Orders
-        if (numberOfOrders > 10000) {
-            kafkaScore += 2;
-        } else {
-            rabbitMqScore += 10;
-        }
+        int rabbitMqScore = criteria.stream()
+                .mapToInt(c -> c.test() ? c.getRabbitMqScore() : 0)
+                .sum();
 
         return kafkaScore > rabbitMqScore ? Broker.KAFKA : Broker.RABBITMQ;
 
     }
 
+}
+
+record Criterion(Predicate<Void> condition, @Getter int kafkaScore, @Getter int rabbitMqScore) {
+
+    public boolean test() {
+        return condition.test(null);
+    }
 }
