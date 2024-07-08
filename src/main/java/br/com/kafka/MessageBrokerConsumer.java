@@ -46,7 +46,7 @@ public class MessageBrokerConsumer {
             Order order = new Order();
             order.setChannel(orderDTO.getChannel());
             order.setPaymentStatus(orderDTO.getPaymentStatus());
-            order.setOrderValue(orderDTO.getTotalValue());
+            order.setOrderValue(orderDTO.getOrderValue());
 
             orderRepository.save(order);
         } catch (Exception cause) {

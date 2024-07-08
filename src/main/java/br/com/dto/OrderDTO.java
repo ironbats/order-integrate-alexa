@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 public class OrderDTO implements Serializable {
 
     private String id;
-    private BigDecimal totalValue;
+    private BigDecimal orderValue;
     private String channel;
     private String paymentStatus;
 }

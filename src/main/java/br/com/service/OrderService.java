@@ -14,6 +14,7 @@ import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -43,10 +44,9 @@ public class OrderService {
             orderDTO.setId(UUID.randomUUID().toString());
             orderDTO.setChannel(randomChannel());
             orderDTO.setPaymentStatus(randomPaymentStatus());
-            orderDTO.setTotalValue(BigDecimal.valueOf(5 * i));
+            orderDTO.setOrderValue(BigDecimal.valueOf(5 * i));
             orderDTOS.add(orderDTO);
         }
-
 
 
         Broker broker = decisionMaker.decision(orderDTOS);
@@ -63,8 +63,10 @@ public class OrderService {
 
 
         List<OrderDTO> ordersWithPaymentOk = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("PAID")).toList();
-        List<OrderDTO> ordersWithPaymentNOk = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("UNPAID")).toList();;
-        List<OrderDTO> ordersWithPaymentFraud = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("FRAUD")).toList();;
+        List<OrderDTO> ordersWithPaymentNOk = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("UNPAID")).toList();
+        ;
+        List<OrderDTO> ordersWithPaymentFraud = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("FRAUD")).toList();
+        ;
 
         final String textForAlexaPaymentOk = " Verifiquei também que voce tem: "
                 + ordersWithPaymentOk.size() + " pedidos com pagamento confirmado, "
@@ -74,29 +76,37 @@ public class OrderService {
         OutputSpeech outputSpeech = new
                 OutputSpeech("PlainText", textForAlexa +
                 orderDTOS.size() + " E o "
-                 + broker.getDisplayName() + textForAlexaContinue + textForAlexaPaymentOk);
+                + broker.getDisplayName() + textForAlexaContinue + textForAlexaPaymentOk);
 
         Response response = new Response(outputSpeech, true);
         AlexaResponse alexaResponse = new AlexaResponse("1.0", response);
 
         //if (broker.name().equals(Broker.KAFKA.name())) {
-            for (OrderDTO order : orderDTOS) {
-                CreateOrderCommand command = new CreateOrderCommand(order.getId(),order.getTotalValue(), order.getChannel(),order.getPaymentStatus());
-                CompletableFuture<SendResult<String, CreateOrderCommand>> future = kafkaTemplate.send("order-events", command);
-                future.whenComplete((result, ex) -> {
-                    if (ex == null) {
-                        System.out.println("Message sent: {}" + result.getRecordMetadata().offset());
-                    } else {
-                        System.out.println("Failed to send message: " + ex.getMessage());
-                    }
-                });
-            }
+        for (OrderDTO order : orderDTOS) {
+
+            final Instant createdAtt = Instant.now();
+            final Instant updateAtt = Instant.now();
+
+            CreateOrderCommand command = new CreateOrderCommand(
+                    order.getId(), order.getOrderValue(), order.getChannel(),
+                    order.getPaymentStatus(), createdAtt.toString(), updateAtt.toString());
+
+
+            CompletableFuture<SendResult<String, CreateOrderCommand>> future = kafkaTemplate.send("order-events", order.getId(), command);
+            future.whenComplete((result, ex) -> {
+                if (ex == null) {
+                    System.out.println("Message sent: {}" + result.getRecordMetadata().offset());
+                } else {
+                    System.out.println("Failed to send message: " + ex.getMessage());
+                }
+            });
+        }
 
         //} else {
 //            for (OrderDTO orderDTO : orderDTOS) {
 //                rabbitTemplate.convertAndSend("order-events", orderDTO);
 //            }
-       // }
+        // }
 
         return alexaResponse;
     }
