@@ -2,6 +2,7 @@ package br.com.service;
 
 import br.com.decision.Broker;
 import br.com.decision.DecisionMaker;
+import br.com.dto.CreateOrderCommand;
 import br.com.dto.OrderDTO;
 import br.com.dto.response.AlexaResponse;
 import br.com.dto.response.OutputSpeech;
@@ -26,7 +27,7 @@ public class OrderService {
     @Autowired
     private DecisionMaker decisionMaker;
     @Autowired
-    private KafkaTemplate<String, OrderDTO> kafkaTemplate;
+    private KafkaTemplate<String, CreateOrderCommand> kafkaTemplate;
 
 
     public AlexaResponse createOrder() {
@@ -45,6 +46,7 @@ public class OrderService {
             orderDTO.setTotalValue(BigDecimal.valueOf(5 * i));
             orderDTOS.add(orderDTO);
         }
+
 
 
         Broker broker = decisionMaker.decision(orderDTOS);
@@ -77,9 +79,10 @@ public class OrderService {
         Response response = new Response(outputSpeech, true);
         AlexaResponse alexaResponse = new AlexaResponse("1.0", response);
 
-        if (broker.name().equals(Broker.KAFKA.name())) {
+        //if (broker.name().equals(Broker.KAFKA.name())) {
             for (OrderDTO order : orderDTOS) {
-                CompletableFuture<SendResult<String, OrderDTO>> future = kafkaTemplate.send("order-events", order);
+                CreateOrderCommand command = new CreateOrderCommand(order.getId(),order.getTotalValue(), order.getChannel(),order.getPaymentStatus());
+                CompletableFuture<SendResult<String, CreateOrderCommand>> future = kafkaTemplate.send("order-events", command);
                 future.whenComplete((result, ex) -> {
                     if (ex == null) {
                         System.out.println("Message sent: {}" + result.getRecordMetadata().offset());
@@ -89,11 +92,11 @@ public class OrderService {
                 });
             }
 
-        } else {
-            for (OrderDTO orderDTO : orderDTOS) {
-                rabbitTemplate.convertAndSend("order-events", orderDTO);
-            }
-        }
+        //} else {
+//            for (OrderDTO orderDTO : orderDTOS) {
+//                rabbitTemplate.convertAndSend("order-events", orderDTO);
+//            }
+       // }
 
         return alexaResponse;
     }

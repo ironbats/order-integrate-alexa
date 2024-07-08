@@ -15,7 +15,7 @@ public class Order  {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-    private BigDecimal totalValue;
+    private BigDecimal orderValue;
     private String channel;
     private String paymentStatus;
 }

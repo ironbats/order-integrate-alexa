@@ -1,5 +1,6 @@
 package br.com.kafka;
 
+import br.com.dto.CreateOrderCommand;
 import br.com.dto.OrderDTO;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
@@ -23,7 +24,7 @@ public class KafkaConfig {
     private String kafkaBootStrapServer;
 
     @Bean
-    public ProducerFactory<String, OrderDTO> producerFactory() {
+    public ProducerFactory<String, CreateOrderCommand> producerFactory() {
         Map<String, Object> config = new HashMap<>();
         config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaBootStrapServer);
         config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -45,7 +46,7 @@ public class KafkaConfig {
     }
 
     @Bean
-    public KafkaTemplate<String, OrderDTO> kafkaTemplate() {
+    public KafkaTemplate<String, CreateOrderCommand> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 

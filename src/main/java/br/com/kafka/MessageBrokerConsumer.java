@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,21 +17,21 @@ public class MessageBrokerConsumer {
 
     private static final Logger LOG = LoggerFactory.getLogger(MessageBrokerConsumer.class);
 
-    @KafkaListener(topics = "order-events", groupId = "order-consumer-os")
-    public void consumerOrders(OrderDTO orderDTO) {
-        LOG.info("Kafka Consumer Order: {} ", orderDTO.toString());
-
-        try {
-            Order order = new Order();
-            order.setChannel(orderDTO.getChannel());
-            order.setPaymentStatus(orderDTO.getPaymentStatus());
-            order.setTotalValue(orderDTO.getTotalValue());
-
-            orderRepository.save(order);
-        } catch (Exception cause) {
-            getError(orderDTO);
-        }
-    }
+//    @KafkaListener(topics = "order-events", groupId = "order-consumer-os")
+//    public void consumerOrders(OrderDTO orderDTO) {
+//        LOG.info("Kafka Consumer Order: {} ", orderDTO.toString());
+//
+//        try {
+//            Order order = new Order();
+//            order.setChannel(orderDTO.getChannel());
+//            order.setPaymentStatus(orderDTO.getPaymentStatus());
+//            order.setTotalValue(orderDTO.getTotalValue());
+//
+//            orderRepository.save(order);
+//        } catch (Exception cause) {
+//            getError(orderDTO);
+//        }
+//    }
 
     private static void getError(OrderDTO orderDTO) {
         LOG.error("Nao foi possivel salvar o  pedido: {}", orderDTO.getId());
@@ -47,7 +46,7 @@ public class MessageBrokerConsumer {
             Order order = new Order();
             order.setChannel(orderDTO.getChannel());
             order.setPaymentStatus(orderDTO.getPaymentStatus());
-            order.setTotalValue(orderDTO.getTotalValue());
+            order.setOrderValue(orderDTO.getTotalValue());
 
             orderRepository.save(order);
         } catch (Exception cause) {
