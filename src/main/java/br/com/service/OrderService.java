@@ -64,9 +64,7 @@ public class OrderService {
 
         List<OrderDTO> ordersWithPaymentOk = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("PAID")).toList();
         List<OrderDTO> ordersWithPaymentNOk = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("UNPAID")).toList();
-        ;
         List<OrderDTO> ordersWithPaymentFraud = orderDTOS.stream().filter(order -> order.getPaymentStatus().equals("FRAUD")).toList();
-        ;
 
         final String textForAlexaPaymentOk = " Verifiquei também que voce tem: "
                 + ordersWithPaymentOk.size() + " pedidos com pagamento confirmado, "
@@ -81,32 +79,38 @@ public class OrderService {
         Response response = new Response(outputSpeech, true);
         AlexaResponse alexaResponse = new AlexaResponse("1.0", response);
 
-        //if (broker.name().equals(Broker.KAFKA.name())) {
-        for (OrderDTO order : orderDTOS) {
+        if (broker.name().equals(Broker.KAFKA.name())) {
+            for (OrderDTO order : orderDTOS) {
 
-            final Instant createdAtt = Instant.now();
-            final Instant updateAtt = Instant.now();
+                final Instant createdAtt = Instant.now();
+                final Instant updateAtt = Instant.now();
 
-            CreateOrderCommand command = new CreateOrderCommand(
-                    order.getId(), order.getOrderValue(), order.getChannel(),
-                    order.getPaymentStatus(), createdAtt.toString(), updateAtt.toString());
+                CreateOrderCommand command = new CreateOrderCommand(
+                        order.getId(), order.getOrderValue(), order.getChannel(),
+                        order.getPaymentStatus(), createdAtt.toString(), updateAtt.toString());
 
 
-            CompletableFuture<SendResult<String, CreateOrderCommand>> future = kafkaTemplate.send("order-events", order.getId(), command);
-            future.whenComplete((result, ex) -> {
-                if (ex == null) {
-                    System.out.println("Message sent: {}" + result.getRecordMetadata().offset());
-                } else {
-                    System.out.println("Failed to send message: " + ex.getMessage());
-                }
-            });
+                CompletableFuture<SendResult<String, CreateOrderCommand>> future = kafkaTemplate.send("order-events", order.getId(), command);
+                future.whenComplete((result, ex) -> {
+                    if (ex == null) {
+                        System.out.println("Message sent: {}" + result.getRecordMetadata().offset());
+                    } else {
+                        System.out.println("Failed to send message: " + ex.getMessage());
+                    }
+                });
+            }
+
+        } else {
+            for (OrderDTO order : orderDTOS) {
+                final Instant createdAtt = Instant.now();
+                final Instant updateAtt = Instant.now();
+
+                CreateOrderCommand command = new CreateOrderCommand(
+                        order.getId(), order.getOrderValue(), order.getChannel(),
+                        order.getPaymentStatus(), createdAtt.toString(), updateAtt.toString());
+                rabbitTemplate.convertAndSend("order-events", command);
+            }
         }
-
-        //} else {
-//            for (OrderDTO orderDTO : orderDTOS) {
-//                rabbitTemplate.convertAndSend("order-events", orderDTO);
-//            }
-        // }
 
         return alexaResponse;
     }
